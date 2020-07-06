@@ -1,6 +1,6 @@
 #!/bin/bash
 mkdir -p processed
-mkdir -p 0_renamed
+mkdir -p /tmp/renamed
 
 size () { echo `stat --printf="%s" "$1" | numfmt --to=iec-i --suffix=B --format="%.2f"`; }
 usage() { echo "Usage: $0 [-m] [-p DIRNAME] [-v] FILENAME" 1>&2; exit 1; }
@@ -31,7 +31,7 @@ processed_dir=${processed_dir:-done}
 
 echo Original file size: `size "$1"`
 
-cp "$1" 0_renamed/"$new_name.$ext"
+cp "$1" /tmp/renamed/"$new_name.$ext"
 
 if [ "$verbose" == 'true' ]; then
     make /tmp/${new_name}.pdf
@@ -46,4 +46,4 @@ if [ -z "$idempotent" ]; then
     mv -v books/"$fn" processed/"$fn" 
 fi
 
-rm 0_renamed/"$new_name.$ext"
+rm /tmp/renamed/"$new_name.$ext"

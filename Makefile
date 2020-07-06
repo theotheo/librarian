@@ -1,31 +1,30 @@
-VPATH = ./0_renamed
+VPATH = /tmp/renamed
 
-1_pdf/%.pdf : %.pdf
+pdfs/%.pdf : %.pdf
 	mkdir -p $(dir $@)
 	cp $^ $@	
 
-0_data/%.toc : %.djvu
+metadata/%.toc : %.djvu
 	mkdir -p $(dir $@)
 	djvused $^ -u -e print-outline > $@
 	$(info Extract TOC from DJVU)
 
-0_data/%.metadata : 1_data/%.toc 
+metadata/%.metadata : metadata/%.toc 
 	# @pdftk $^ dump_data_utf8 > $@
 	if [ -s $< ]; then ./toc_convert.py $< > $@; else touch $@; fi 
 
-1_extracted/%.pdf : %.djvu  
+extracted/%.pdf : %.djvu  
 	mkdir -p $(dir $@)
 	ddjvu -format=pdf -quality=150 -mode=black $<  $@
 	# ddjvu -format=pdf -quality=150 -mode=black -page=1-10 $<  $@
-
 	$(info Convert DJVU to PDF)
-	
-1_pdf/%.pdf : 1_data/%.metadata 1_extracted/%.pdf
+
+pdfs/%.pdf : metadata/%.metadata extracted/%.pdf
 	mkdir -p $(dir $@)
 	pdftk $(word 2,$^) update_info_utf8 $< output $@
 	$(info Insert TOC)
 
-1_pdf/%.pdf : %.doc %.docx %.rtf %.pptx %.ppsx %.odp
+pdfs/%.pdf : %.doc %.docx %.rtf %.pptx %.ppsx %.odp
 	mkdir -p $(dir $@)
 	soffice --invisible --norestore --convert-to pdf --print-to-file --printer-name "$@" --outdir "./$(dirname "$^")" "$^" 
 
@@ -34,14 +33,14 @@ VPATH = ./0_renamed
 # 	ebook-convert "$^" "$@"
 
 
-1_pdf/%.pdf : %.epub
+pdfs/%.pdf : %.epub
 	ebook-convert "$^" "$@"
 
-1_pdf/%.pdf : %.fb2
+pdfs/%.pdf : %.fb2
 	ebook-convert "$^" "$@"
 
 .ONESHELL:
-3_ocr/%.pdf : 1_pdf/%.pdf
+ocr/%.pdf : pdfs/%.pdf
 	mkdir -p $(dir $@)
 	
 	MYFONTS=`pdffonts $^ | tail -n +3 | cut -d' ' -f1 | sort | uniq)`
@@ -60,13 +59,13 @@ VPATH = ./0_renamed
 # 	cp "$^" "$@"
 # endif
 
-.PRECIOUS: 3_ocr/%.pdf
-4_min/%.pdf : 3_ocr/%.pdf
+.PRECIOUS: ocr/%.pdf
+min/%.pdf : ocr/%.pdf
 	mkdir -p $(dir $@)
 	ps2pdf -dPDFSETTINGS=/ebook "$^" "$@" 
-	echo "Minimization..."
+	$(info Minimization...)
 
-/tmp/%.pdf : 4_min/%.pdf
+/tmp/%.pdf : min/%.pdf
 	mkdir -p $(dir $@)
 	mv $^ $@
-	echo "Move to done/"  
+	$(info Move to done)  
